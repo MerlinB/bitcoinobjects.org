@@ -1,15 +1,22 @@
 ---
 home: true
-heroText: Bitcoin Objects
-tagline: Self-describing JSON objects on Bitcoin
+navbar: false
+heroText: null
+heroImage: /bo_logo.svg
+tagline: Self-descriptive JSON graphs on Bitcoin SV
 actionText: Get Started →
 actionLink: /docs/
 features:
-- title: Interoperable
-  details: Protocol using Bitcoin Objects share a data structure that enabled easy interoperability.
-- title: Bitcom Compatible
-  details: Bitcoin objects are completely compatible to existing Bitcom protocols.
-- title: No protocol requirements
-  details: Protocols can be described as interoperable objects incrementally and don't need to be changed at all.
-footer: "Created by Merlin"
+  - title: Interoperable
+    details: Protocols using Bitcoin Objects share a data structure that enables a degree of interoperability, making your data more valuable.
+  - title: Easy to adopt
+    details: No changes necessary to existing infrastructure or protocols. Existing protocols can incrementally adopt Bitcoin Objects, depending on the applications needs.
+  - title: Compatible
+    details: Bitcoin Objects is extending and completely compatible to existing protocols like Bitcom and Operate.
 ---
+
+<div class="buttons">
+  <a href="https://t.me/bitbart"><span class="mdi mdi-telegram"></span></a>
+  <a href="https://twitter.com/unanon_"><span class="mdi mdi-twitter"></span></a>
+  <a href="https://github.com/MerlinB"><span class="mdi mdi-github-circle"></span></a>
+</div>

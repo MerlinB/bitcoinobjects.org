@@ -1,175 +1,217 @@
-# Introduction
+# Protocol
 
-Bitcoin Objects is a framework for building declarative, self-describing and interoperable JSON-like objects on-chain.
+::: warning Disclaimer
+This protocol is under development, expect changes.
+:::
 
-Objects can reference each other to create a data-structure that is designed to be as unrestrictive as possible and that can be shared among protocols to lower the barriers of interoperability.
+::: tip Coming soon
+- Object explorer
+- Javascript library for loading and creating objects
+:::
 
-The structure is similar to a spreadsheet in which the intersection of dimensions is used as a point of data. Contrary to a spreadsheet, there are no limitations on the number of dimensions and no strict differentiation between cells and dimensions. I do not intent to make any statement about how data inside of the structure should be organized and linked together. I expect there to be a market-driven process in which useful patterns start emerging.
+## Introduction
 
-The benefits of using the same, generalized data-structure could be compared to speaking the same language whereas it does not include knowledge of the same concepts. However, the common language can be used explain and create common concepts by putting them in context.
+Bitcoin Objects is a framework for building self-descriptive and interoperable data-structures that consist of individually addressable JSON-like objects stored on-chain.
 
-# Rules
+It can be incrementally adopted to benefit from a higher degree of interoperability and does not require a change to existing infrastructure, including currently used protocols.
 
-- All on-chain information is divided in cells, where every cell is addressable by a unique identifier.
-- All content of a cell must consist type-value pairs where types are references to cells.
-- Only one value of each type can exist per cell (Also enforced by JSON)
+The benefits of using the same, generalized data-structure could be compared to speaking the same language. While knowledge of the same concepts does not necessarily follow from it, a shared language can be used explain and create common concepts by putting them in context. Context makes information more useful and thus more valuable.
 
-# Getting started
+The framework is designed to be a non-restrictive generalization of existing conventions and protocols and is thus completely compatible to many existing solutions, including Bitcom and Operate.
 
-Every cell is defined in relation to other cells. Cells are created by providing at least one type-value pair where a type is a reference to a cell as well.
+### Visualizing the structure
+
+The resulting structure can be understood as similar to a spreadsheet: the intersection of dimensions is used as points of data. Contrary to a spreadsheet, there are no limitations on the number of dimensions and no strict differentiation between objects and dimensions. A single object could be interpreted as a rank (or row of objects) in one dimension.
+
+## Rules
+
+1. All on-chain information is divided into objects, where every object is addressable by a unique identifier.
+2. All content of an object must consist type-value pairs where a type is a reference to an object and a value is one or more object references or utf-8-readable Strings.
+3. Types of an object must be unique for this object.
+
+## Getting started
+
+Every object is defined in relation to other objects. Objects are created by providing at least one type-value pair where a type is a reference to an object as well.
 
 `OP_RETURN <type> <value>`
 
 This is analogous and compatible to the already common Bitcom convention of `OP_RETURN <protocol> <variable>`.
 
-Another valid analogy for cells are functions: `OP_RETURN <function> <argument 1> ...`, but we will get into that later.
+Another valid analogy for objects are functions: `OP_RETURN <function> <argument 1> ...`, but we will get into that later.
 
 The resulting object can be expressed in JSON:
 
 ```json
 {
-  "<cell>": {
+  "<object>": {
     "<type>": "<value>"
   }
 }
 ```
 
-Our newly created cell (`<cell>`) is uniquely addressable by its transaction id and output number, expressed as `<txid>.<output>`. The same goes for `<type>`, which is a reference to a cell as well.
+Our newly created object (`<object>`), as well as all other objects, is uniquely addressable by an URI consisting of its transaction id and output number, expressed as `obj://<txid>/<output>`.
 
-The resulting object describes the value at the intersection of 2 dimensions and can thus be represented in another perspective.
+The resulting object describes a value (`<value>`) at the intersection of 2 dimensions (`<object>`, `<type>`) and can thus be represented in another form.
 
 ```json
 {
   "<type>": {
-    "<cell>": "<value>"
+    "<object>": "<value>"
   }
 }
 ```
 
-Let's build a meaningful structure and create a cell representing a description that we can then later use in other cells as property.
+Creating a object property with multiple values puts them into an array:
+
+`OP_RETURN <type> <value 1> <value 2>`
+
+```json
+{
+  "<object>": {
+    "<type>": [
+      "<value 1>",
+      "<value 2>"
+    ]
+  }
+}
+```
+
+Let's build a meaningful structure and create an object representing a description that we can then later use in other objects as property. Because all objects are build uo from combinations of objects we need to start with an recursive object definition in this case.
 
 `OP_RETURN this "A short object description."`
 
 ```json
 {
-  "<description cell>": {
-    "<description cell>": "A short object description."
+  "<description object>": {
+    "<description object>": "A short object description."
   }
 }
 ```
 
-Because all cells are defined as combinations of cells we need to start with a recursive cell definition.
+We could also use an object to represent a datatype. To reference multiple objects we separate them using the pipe operator which is already a convention for protocols (see Bitcom):
 
-We could also use a cell to define a datatype. To reference multiple cells we separate them using the pipe operator which is already a convention for protocols:
-
-`OP_RETURN this <description cell> "The expected datatype." | this "String"`
+`OP_RETURN this <description object> "The expected datatype." | this "String"`
 
 ```json
 {
-  "<datatype cell>": {
-    "<description cell>": "The expected datatype.",
-    "<datatype cell>": "String"
+  "<datatype object>": {
+    "<description object>": "The expected datatype.",
+    "<datatype object>": "String"
   }
 }
 ```
 
-Let's use our new description cell to create some other cells to use as properties:
+Let's use our new description and datatype objects to create some more objects to use as properties:
 
-`OP_RETURN <description cell> "The age of a person." | <datatype cell> "Integer"`
+`OP_RETURN this "Title" | <description object> "A String representation of the object." | <datatype object> "String"`
 
-`OP_RETURN <description cell> "The name of a person." | <datatype cell> "String"`
+`OP_RETURN <title object> "Age" | <description object> "The age of a person." | <datatype object> "Integer"`
 
-`OP_RETURN <description cell> "The date of birth of a person." | <datatype cell> "String"`
+`OP_RETURN <title object> "Name" | <description object> "The name of a person." | <datatype object> "String"`
 
-Now we can create a meaning object representing a person.
+`OP_RETURN <title object> "Born" | <description object> "The date of birth of a person." | <datatype object> "String"`
 
-`OP_RETURN <name cell> "Merlin Buczek" | <age cell> 23 | <born cell> "12.04.1995"`
+Now we can create a meaningful object representing a person.
+
+`OP_RETURN <name object> "Merlin Buczek" | <age object> 23 | <born object> "12.04.1995"`
 
 ```json
 {
-  "<merlin cell>": {
-    "<name cell>": "Merlin Buczek",
-    "<age cell>": 23,
-    "<born cell>": "12.04.1995",
+  "<merlin object>": {
+    "<name object>": "Merlin Buczek",
+    "<age object>": 23,
+    "<born object>": "12.04.1995"
   }
 }
 ```
 
-You may notice that we do not differentiate between describing specific objects and "type" objects. The reason for this is the separation of syntax and semantics. Our goal is to provide a generalized protocol for describing data structures without limiting any user in what structures can be created. The meaning of structures is not purely objective and can't be explicitly described without limiting its use. It can only be inferred by the person using the structure.
+You may notice that we did not differentiate between describing specific objects and "type" objects. The reason for this is the separation of syntax and semantics. Our goal is to provide a generalized protocol for describing data structures without limiting users in what structures can be created.
 
 ## Modifying existing objects
 
-There is no "right" way to represent any information in this data-structure. However, there is an incentive to share certain structures so I expect a consensus of useful structure to emerge. Here is one way how a change to an object could be represented:
+There is no "right" way to represent any information in this data-structure. However, there is an incentive to share structures so we can expect the market to converge towards useful structure.
+Objects are always created, never deleted or changed. In keeping with out goals of generalization, changes to existing objects are an abstraction, represented by newly created objects. Here is one way how an update to an object could be represented:
 
-To modify our existing person object we first need a cell to represent an editing action and a cell to reference another cell:
+To modify our existing person object we first need a new object representing an update and an object to reference our editing target:
 
-`OP_RETURN <description cell> "An edit to a cell." | <datatype cell> "Cell"`
+`OP_RETURN <description object> "An update to an object." | <datatype object> "object"`
 
-`OP_RETURN <description cell> "A target cell." | <datatype cell> "Cell"`
+`OP_RETURN <description object> "A target object." | <datatype object> "object"`
 
-Both the edit cell as well as the target cell in our case should expect the reference to another cell.
+Both the update object as well as the target object in our case expect another object as input.
+Let's also create an object representing a signature so we can sign our update:
 
-Let's also create an object representing a signature so we can sign our change:
+`OP_RETURN <description object> "A signature of the object creator."`
 
-`OP_RETURN <description cell> "A signature of the object creator."`
+Now we can update our person object by creating 2 outputs:
 
-Now we can edit our person object:
-
-`OP_RETURN <edit cell> $ <age cell> 25 | <target cell> <merlin cell> | <description cell> "I had my birthday." | <signature cell> <signature>`
+`OP_RETURN <age object> 25`
 
 ```json
 {
-  "<edit merlin cell>": {
-    "<edit cell>": {
-      "<age cell>": 25
-    },
-    "<target cell>": "<merlin cell>",
-    "<description cell>": "I had my birthday.",
-    "<signature cell>": <signature>
+  "<age object>": 25
+}
+```
+
+`OP_RETURN <update object> <changes object> | <target object> <merlin object> | <description object> "I had my birthday." | <signature object> <signature>`
+
+```json
+{
+  "<update merlin object>": {
+    "<update object>": "<changes object>",
+    "<target object>": "<merlin object>",
+    "<description object>": "I had my birthday.",
+    "<signature object>": <signature>
   }
 }
 ```
 
-Notice that instead of including a reference of a cell we included the cell representing the changes directly as value of the edit cell. This cell still has a unique address if we reference it through our `<edit merlin cell>`: `<edit merlin cell txid>.<output>.<edit cell>`, though we probably wont need to reference it anywhere else.
+## Permissions
 
-Also we used a new Symbol to avoid passing `<age cell>` and `25` as separate values to `<edit cell>`: `$`. This is a symbol borrowed from functional programming, representing right-association. An analogous notation using parenthesis would be `<edit cell> ( <age cell> 25 )`.
+There are no restrictions on a protocol level of who can create or update objects. We can expect applications to have different requirements and models of how permissions should work.
+Every developer is thus free to construct his own permission system using objects. The responsibility of ensuring data integrity always lies with the application itself.
 
-## Duplicate data
+## Protocol schemas
 
-Of course there is a need of developers to not include all the type cell references in every new transaction they make. We can solve this the same way as everything else: We create a new data-structure. In our case we will need a cell representing a certain object template. Another way to look at it is that we are doing something very similar to creating a new Bitcom protocol.
+Of course there is a need of developers to not include all the type object references in every new transaction they make. We can solve this the same way as everything else: We create an abstraction using the data-structure. In our case we will need an object representing a certain object template. Another way to look at it is that we are doing something very similar to creating a new Bitcom protocol.
 
-`OP_RETURN <description cell> "Holds an array of arguments"`
+We will need an object to represent a mapping function and one that represents an array of object references as types.
 
-And here is our edit mapping schema:
+`OP_RETURN <description object> "An array of object types"`
+`OP_RETURN <types array object> <edit object> <target object> <description object> <signature object>`
 
-`OP_RETURN <arguments cell> <edit cell> <target cell> <description cell> <signature cell> | <description cell> "Describes the schema for a cell that represents a new edit to a cell."`
+Now we can create our array mapping schema.
+
+`OP_RETURN <map object> <update array object> | <description object> "Describes the schema for an object that represents a new edit to an object."`
 
 ```json
 {
-  "<edit schema cell>": {
-    "<arguments cell>": [
-      "<edit cell>",
-      "<target cell>",
-      "<description cell>",
-      "<signature cell>",
+  "<create update object>": {
+    "<types array object>": [
+      "<edit object>",
+      "<target object>",
+      "<description object>",
+      "<signature object>"
     ],
-    "<description cell>": "Describes the schema for a cell that represents a new edit to a cell."
+    "<description object>": "Describes the schema for an object that represents a new edit to an object."
   }
 }
 ```
 
 Now we can create a new change much shorter:
 
-`OP_RETURN <age cell> 26 | <another cell> "new value"`
-
-`OP_RETURN <edit schema cell> <changes cell> <merlin cell> "I had my birthday AGAIN." <signature>`
+`OP_RETURN <age object> 26 | <another object> "new value"`
+`OP_RETURN <create update object> <changes object> <merlin object> "I had my birthday AGAIN." <signature>`
 
 ```json
 {
-  "<edit merlin cell 2>": {
-    "<edit schema cell>": [
-      { "<age cell>": 26 },
-      "<merlin cell>"
+  "<update merlin object 2>": {
+    "<create update object>": [
+      {
+        "<age object>": 26,
+        "<another object>": "new value"
+      },
+      "<merlin object>"
       "I had my birthday AGAIN.",
       <signature>
     ]
@@ -179,15 +221,8 @@ Now we can create a new change much shorter:
 
 ## Bitcom compatibility
 
-Every Bitcom protocol is already valid in our generalized protocol. Only that the Bitcom protocol identifier does not point to a valid cell yet. We can define structures for existing protocols by defining a mapping schema like we did before.
-
-We could also define aliases between protocol identifiers and cell references so the Bitcom address wouldn't even need to be changed (assuming the aliases are respected by others).
-
-`OP_RETURN <description cell> "An alias between a bitcom protocol and a cell."`
-
-`OP_RETURN <alias cell> <bitcom address>`
-
-Existing protocols can be incrementally made compatible to this data scheme by adding descriptions only for certain properties.
+Every Bitcom protocol is already valid in our generalized protocol. The only part missing for it to be considered a valid object is that the Bitcom protocol identifier does not point to an object yet.
+Existing protocols can incrementally adopt Bitcoin Objects by adding object references as types without the need to add every reference at once.
 
 Here is an example of unwriter's [BitPic](https://bitpic.network/about) protocol:
 
@@ -205,60 +240,64 @@ OP_RETURN
   [Sig]
 ```
 
-What it does is upload an image via the [B:// protocol](https://b.bitdb.network/) in its first part and connects it to a Paymail in its second part. We can easily represent this as a cell:
+What it does is upload an image via the [B:// protocol](https://b.bitdb.network/) in its first part and connects it to a Paymail in its second part. We can easily represent this as an object:
 
 ```json
 {
-  "<BitPic upload cell>": {
+  "<BitPic upload object>": {
     "19HxigV4QyBv3tHpQVcUEQyq1pzZVdoAut": [
-      <FILE Binary>,
+      "<FILE Binary>",
       "image/jpeg",
       "binary"
     ],
     "18pAqbYqhzErT6Zk3a5dwxHtB9icv8jH2p": [
-      <Paymail>,
-      <Pubkey>,
-      <Sig>
-    ]
-  }
+      "<Paymail>",
+      "<Pubkey>",
+      "<Sig>"
 }
 ```
 
-All we'll have to do now is create a cell definition for the two protocols. Again, we don't have to change change the actual protocol and can instead create an alias cell connecting the Bitcom identifier with the cell.
+All we have to do now is create an object definition for the two protocols.
+Because both protocols accept multiple values, it would be very helpful go one step further and create their schema objects (like we did before).
+To avoid needing to modify the protocol (Removing the Bitcom address) we can define aliases between protocol identifiers and object references so the Bitcom address won't even have to be changed:
 
-Because both protocols accept multiple values, it would be very helpful go one step further and create their schema cells (like we did before).
+`OP_RETURN <description object> "An alias between a Bitcom protocol identifier and an object."`
+
+::: warning
+There is no guarantee that Bitcom addresses will be respected by others users of the data structure in the future. Using object references directly is preferable.
+:::
 
 ```json
 {
-  "<BitPic upload cell>": {
-    "<B:// cell>": {
-      "data": <FILE Binary>,
+  "<BitPic upload object>": {
+    "<B:// object>": {
+      "data": "<FILE Binary>",
       "media type": "image/jpeg",
       "encoding": "binary"
     },
-    "BitPic cell": {
-      "paymail": <Paymail>,
-      "pubkey": <Pubkey>,
-      "signature": <Sig>
+    "<BitPic object>": {
+      "paymail": "<Paymail>",
+      "pubkey": "<Pubkey>",
+      "signature": "<Sig>"
     }
   }
 }
 ```
 
-Ideally, we would also define the properties as cells.
+Ideally, we would also define the properties as objects.
 
 ```json
 {
-  "<BitPic upload cell>": {
-    "<B:// cell>": {
-      "<Data cell>": <FILE Binary>,
-      "<Media Type cell>": "image/jpeg",
-      "<Encoding cell>": "binary"
+  "<BitPic upload object>": {
+    "<B:// object>": {
+      "<Data object>": "<FILE Binary>",
+      "<Media Type object>": "image/jpeg",
+      "<Encoding object>": "binary"
     },
-    "<BitPic cell>": {
-      "<Paymail cell>": <Paymail>,
-      "<Pubkey cell>": <Pubkey>,
-      "<Signature Protocol>": <Sig>
+    "<BitPic object>": {
+      "<Paymail object>": "<Paymail>",
+      "<Pubkey object>": "<Pubkey>",
+      "<Signature Protocol>": "<Sig>"
     }
   }
 }
@@ -266,69 +305,74 @@ Ideally, we would also define the properties as cells.
 
 We have now fully integrated BitPic into our data structure.
 
-## Cells as functions
+## Objects as functions
 
-As you might have already noticed, cells work quite similar to function calls, separated by the pipe operator `|`: They receive one or more arguments and output an object. In fact, we could even add  code to our cells to describe operations.
-
-We don't offer a Syntax for operations, but that doesn't mean that there couldn't exist one! There could theoretically even exist more than one implementation for every function, for example in 2 different programming languages.
-
-For example, we could use [Operate](https://www.operatebsv.org/) to define a script with on-chain Lua code for our edit schema cell to output the resulting (edited) object.
+As you might have already noticed, objects work quite similar to function calls, separated by the pipe operator `|`. In fact, this is what [Operate](https://www.operatebsv.org/) is already doing. In Operate, every function is implemented with on-chain Lua code and the result of any function is piped as input into the next function. We can argue about objects as functions in the same way, which makes them compatible with Operates OPs.
 
 ```json
 {
-  "<edit schema cell>": {
-    "<arguments cell>": [[
-      "<edit cell>",
-      "<target cell>",
-      "<description cell>",
-      "<signature cell>",
-    ]],
-    "<operate getObject cell>": "<operate script hash>",
-    "<description cell>": "Describes the schema for a cell that represents a new edit to a cell."
+  "<my program object>": {
+    "<some object>": "some value",
+    "<function 1>": [
+      "<arg 1.1>"
+      "<arg 1.2>"
+    ],
+    "<function 2>": [
+      "<arg 2.1>",
+      "<arg 2.2>"
+    ]
   }
 }
 ```
 
-## Planaria
+Generalizing functions into our data structure allows them to be put into context and referenced to be included into larger structures. For example, this enables the assembly of larger programs out of individually addressable parts that can compete with alternative implementations.
+There could theoretically even exist more than one implementation for every function object, for example in 2 different programming languages.
 
-Here is a [JQ](https://stedolan.github.io/jq/) filter that convertes an array of BOB transactions into our objects: `[ .[] | . as $tx | .out[] | { ( "uop://" + $tx.tx.h + "." + ( .i | tostring ) ): [ .tape | select(length > 1 and .[0].cell[-1].ops == "OP_RETURN") | .[1:] | .[] | { (.cell[0].s): ( .cell[1:] | [ .[] | .ls // .s // .ops ] | if length > 1 then . else .[] end | . ) } | select(.[] | length > 0) | to_entries | .[] ] | from_entries } ] | map(select(.[] | length > 0))`.
+### Operate compatibility
 
-Planarium fails to display all objects but queries are working:
-
-[](https://bob.planaria.network/query/1GgmC7Cg782YtQ6R9QkM58voyWeQJmJJzG/ewogICJ2IjogMywKICAicSI6IHsKICAgICJmaW5kIjogewogICAgICAib3V0LjIiOiB7ICIkZXhpc3RzIjogdHJ1ZSB9LAogICAgICAib3V0LnRhcGUuY2VsbC5vcHMiOiAiT1BfUkVUVVJOIgogICAgfSwKICAgICJwcm9qZWN0IjogewogICAgICAib3V0LnRhcGUuY2VsbC5zIjogMSwgIm91dC50YXBlLmNlbGwub3BzIjogMSwgInR4LmgiOiAxLCAib3V0LmkiOiAxCiAgICB9LAogICAgImxpbWl0IjogMzAKICB9LAogICJyIjp7CiAgICAiZiI6ICJbIC5bXSB8IC4gYXMgJHR4IHwgLm91dFtdIHwgeyAoIFwidW9wOi8vXCIgKyAkdHgudHguaCArIFwiLlwiICsgKCAuaSB8IHRvc3RyaW5nICkgKTogWyAudGFwZSB8ICBzZWxlY3QobGVuZ3RoID4gMSBhbmQgLlswXS5jZWxsWy0xXS5vcHMgPT0gXCJPUF9SRVRVUk5cIikgfCAuWzE6XSB8IC5bXSB8IHsgKC5jZWxsWzBdLnMpOiAoLmNlbGxbMTpdIHwgWyAuW10gfCAubHMgLy8gLnMgLy8gLm9wcyBdIHwgaWYgbGVuZ3RoID4gMSB0aGVuIC4gZWxzZSAuW10gZW5kIHwgLiApIH0gfCBzZWxlY3QoLltdIHwgbGVuZ3RoID4gMCkgfCB0b19lbnRyaWVzIHwgLltdIF0gfCBmcm9tX2VudHJpZXMgfSBdIHwgbWFwKHNlbGVjdCguW10gfCBsZW5ndGggPiAwKSkiCiAgfQp9)
-
-## `ToDo` Interoperability
-
-As different services have different needs about which data they require and in which form the data is stored we should not expect developers to be willing to make compromises to their application for the sake of interoperability.
-
-Luckily, different protocols do not have to share their entire structure to have a degree of interoperability.
-
-Let's take the example of two competing user protocols. Both protocol have already defined a cell to map their OP_RETURN data onto an object (like we did before).
+Let's add an Operate implementation to our `<create update object>`.
 
 ```json
 {
-  "<protocol 1>": {
-    "name": "MerlinB",
-    "id": 12345,
-    "pubKey": "02e1237ebe8ed414556e6764de9ea62dc64fb6d1bf88ca28866323cae3b8207120"
-  }
-}
-
-{
-  "<protocol 2>": {
-    "firstName": "Merlin",
-    "lastName": "Buczek",
-    "profilePicture": ""
+  "<create update object>": {
+    "<types array object>": [
+      "<edit object>",
+      "<target object>",
+      "<description object>",
+      "<signature object>"
+    ],
+    "<description object>": "Describes the schema for an object that represents a new edit to an object.",
+    "<operate object>": "<operate script hash>"
   }
 }
 ```
 
-Both parties have an interest in sharing a data structure. A good thing about this is that they don't have to make compromises to their protocol for that. Instead they can tinker with their cell definitions in the background.
+The state that our Operate OP receives contains the outputs of `<types array object>` and `<description object>` as they come before in our `OP_RETURN`, separated by `|`. In our case, they are just adding their values to the state. Our Lua implementation should probably resemble a mapping function that outputs the assembled update object:
 
-Cells can be shared between protocols.
+```json
+{
+  "<update object>": "<changes object>",
+  "<target object>": "<merlin object>",
+  "<description object>": "I had my birthday.",
+  "<signature object>": <signature>
+}
+```
 
-Even if another protocol ist constructed from entirely different cells, as long as these cells share properties, there is already a relation between the protocols created.
+## Planaria compatibility
 
-## Transformations
+Here is a [JQ](https://stedolan.github.io/jq/) filter that convertes an array of BOB transactions into an object:
 
-One could easily define a "translation function" between cells that describe similar data.
+```jq
+[ .[] | . as $tx | .out[] | {
+  ( "uop://" + $tx.tx.h + "." + ( .i | tostring ) ): [
+    .tape | select(length > 1 and .[0].object[-1].ops == "OP_RETURN") | .[1:] | .[] | {
+      (.object[0].s): (
+        .object[1:] | [ .[] | .ls // .s // .ops ]
+        | if length > 1 then . else .[] end | .
+      )
+    } | select(.[] | length > 0) | to_entries | .[]
+  ] | from_entries
+} ] | map(select(.[] | length > 0))
+```
+
+Planarium fails to display all objects but [queries are working](https://bob.planaria.network/query/1GgmC7Cg782YtQ6R9QkM58voyWeQJmJJzG/ewogICJ2IjogMywKICAicSI6IHsKICAgICJmaW5kIjogewogICAgICAib3V0LjIiOiB7ICIkZXhpc3RzIjogdHJ1ZSB9LAogICAgICAib3V0LnRhcGUuY2VsbC5vcHMiOiAiT1BfUkVUVVJOIgogICAgfSwKICAgICJwcm9qZWN0IjogewogICAgICAib3V0LnRhcGUuY2VsbC5zIjogMSwgIm91dC50YXBlLmNlbGwub3BzIjogMSwgInR4LmgiOiAxLCAib3V0LmkiOiAxCiAgICB9LAogICAgImxpbWl0IjogMzAKICB9LAogICJyIjp7CiAgICAiZiI6ICJbIC5bXSB8IC4gYXMgJHR4IHwgLm91dFtdIHwgeyAoIFwidW9wOi8vXCIgKyAkdHgudHguaCArIFwiLlwiICsgKCAuaSB8IHRvc3RyaW5nICkgKTogWyAudGFwZSB8ICBzZWxlY3QobGVuZ3RoID4gMSBhbmQgLlswXS5jZWxsWy0xXS5vcHMgPT0gXCJPUF9SRVRVUk5cIikgfCAuWzE6XSB8IC5bXSB8IHsgKC5jZWxsWzBdLnMpOiAoLmNlbGxbMTpdIHwgWyAuW10gfCAubHMgLy8gLnMgLy8gLm9wcyBdIHwgaWYgbGVuZ3RoID4gMSB0aGVuIC4gZWxzZSAuW10gZW5kIHwgLiApIH0gfCBzZWxlY3QoLltdIHwgbGVuZ3RoID4gMCkgfCB0b19lbnRyaWVzIHwgLltdIF0gfCBmcm9tX2VudHJpZXMgfSBdIHwgbWFwKHNlbGVjdCguW10gfCBsZW5ndGggPiAwKSkiCiAgfQp9).
