@@ -5,9 +5,10 @@ This protocol is under development, expect changes.
 :::
 
 ::: tip Coming soon
+
 - Object explorer
 - Javascript library for loading and creating objects
-:::
+  :::
 
 ## Introduction
 
@@ -26,14 +27,14 @@ The resulting structure can be understood as similar to a spreadsheet: the inter
 ## Rules
 
 1. All on-chain information is divided into objects, where every object is addressable by a unique identifier.
-2. All content of an object must consist type-value pairs where a type is a reference to an object and a value is one or more object references or utf-8-readable Strings.
-3. Types of an object must be unique for this object.
+2. All content of an object must consist key-value pairs where a key is a reference to an object and a value is one or more object references or utf-8-readable Strings.
+3. Keys of an object must be unique for this object.
 
 ## Getting started
 
-Every object is defined in relation to other objects. Objects are created by providing at least one type-value pair where a type is a reference to an object as well.
+Every object is defined in relation to other objects. Objects are created by providing at least one key-value pair where a key is a reference to an object as well.
 
-`OP_RETURN <type> <value>`
+`OP_RETURN <key> <value>`
 
 This is analogous and compatible to the already common Bitcom convention of `OP_RETURN <protocol> <variable>`.
 
@@ -44,18 +45,18 @@ The resulting object can be expressed in JSON:
 ```json
 {
   "<object>": {
-    "<type>": "<value>"
+    "<key>": "<value>"
   }
 }
 ```
 
-Our newly created object (`<object>`), as well as all other objects, is uniquely addressable by an URI consisting of its transaction id and output number, expressed as `obj://<txid>/<output>`.
+Our newly created object (`<object>`), as well as all other objects, is uniquely addressable by an URI consisting of its transaction id and output number, expressed as `obj://<txid>/o/<output>`.
 
-The resulting object describes a value (`<value>`) at the intersection of 2 dimensions (`<object>`, `<type>`) and can thus be represented in another form.
+The resulting object describes a value (`<value>`) at the intersection of 2 dimensions (`<object>`, `<key>`) and can thus be represented in another form.
 
 ```json
 {
-  "<type>": {
+  "<key>": {
     "<object>": "<value>"
   }
 }
@@ -63,15 +64,12 @@ The resulting object describes a value (`<value>`) at the intersection of 2 dime
 
 Creating a object property with multiple values puts them into an array:
 
-`OP_RETURN <type> <value 1> <value 2>`
+`OP_RETURN <key> <value 1> <value 2>`
 
 ```json
 {
   "<object>": {
-    "<type>": [
-      "<value 1>",
-      "<value 2>"
-    ]
+    "<key>": ["<value 1>", "<value 2>"]
   }
 }
 ```
@@ -125,7 +123,7 @@ Now we can create a meaningful object representing a person.
 }
 ```
 
-You may notice that we did not differentiate between describing specific objects and "type" objects. The reason for this is the separation of syntax and semantics. Our goal is to provide a generalized protocol for describing data structures without limiting users in what structures can be created.
+You may notice that we did not differentiate between describing specific objects and "key" objects. The reason for this is the separation of syntax and semantics. Our goal is to provide a generalized protocol for describing data structures without limiting users in what structures can be created.
 
 ## Modifying existing objects
 
@@ -173,12 +171,12 @@ Every developer is thus free to construct his own permission system using object
 
 ## Protocol schemas
 
-Of course there is a need of developers to not include all the type object references in every new transaction they make. We can solve this the same way as everything else: We create an abstraction using the data-structure. In our case we will need an object representing a certain object template. Another way to look at it is that we are doing something very similar to creating a new Bitcom protocol.
+Of course there is a need of developers to not include all the key object references in every new transaction they make. We can solve this the same way as everything else: We create an abstraction using the data-structure. In our case we will need an object representing a certain object template. Another way to look at it is that we are doing something very similar to creating a new Bitcom protocol.
 
-We will need an object to represent a mapping function and one that represents an array of object references as types.
+We will need an object to represent a mapping function and one that represents an array of object references as keys.
 
-`OP_RETURN <description object> "An array of object types"`
-`OP_RETURN <types array object> <edit object> <target object> <description object> <signature object>`
+`OP_RETURN <description object> "An array of object keys"`
+`OP_RETURN <keys array object> <edit object> <target object> <description object> <signature object>`
 
 Now we can create our array mapping schema.
 
@@ -187,7 +185,7 @@ Now we can create our array mapping schema.
 ```json
 {
   "<create update object>": {
-    "<types array object>": [
+    "<keys array object>": [
       "<edit object>",
       "<target object>",
       "<description object>",
@@ -222,7 +220,7 @@ Now we can create a new change much shorter:
 ## Bitcom compatibility
 
 Every Bitcom protocol is already valid in our generalized protocol. The only part missing for it to be considered a valid object is that the Bitcom protocol identifier does not point to an object yet.
-Existing protocols can incrementally adopt Bitcoin Objects by adding object references as types without the need to add every reference at once.
+Existing protocols can incrementally adopt Bitcoin Objects by adding object references as keys without the need to add every reference at once.
 
 Here is an example of unwriter's [BitPic](https://bitpic.network/about) protocol:
 
@@ -335,7 +333,7 @@ Let's add an Operate implementation to our `<create update object>`.
 ```json
 {
   "<create update object>": {
-    "<types array object>": [
+    "<keys array object>": [
       "<edit object>",
       "<target object>",
       "<description object>",
@@ -347,7 +345,7 @@ Let's add an Operate implementation to our `<create update object>`.
 }
 ```
 
-The state that our Operate OP receives contains the outputs of `<types array object>` and `<description object>` as they come before in our `OP_RETURN`, separated by `|`. In our case, they are just adding their values to the state. Our Lua implementation should probably resemble a mapping function that outputs the assembled update object:
+The state that our Operate OP receives contains the outputs of `<keys array object>` and `<description object>` as they come before in our `OP_RETURN`, separated by `|`. In our case, they are just adding their values to the state. Our Lua implementation should probably resemble a mapping function that outputs the assembled update object:
 
 ```json
 {

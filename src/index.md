@@ -10,7 +10,7 @@ features:
   - title: Interoperable
     details: Protocols using Bitcoin Objects share a data structure that enables a degree of interoperability, making your data more valuable.
   - title: Easy to adopt
-    details: No changes necessary to existing infrastructure or protocols. Existing protocols can incrementally adopt Bitcoin Objects, depending on the applications needs.
+    details: No changes necessary to existing infrastructure or protocols. Bitcoin Objects can be incrementally adopted, depending on the applications needs.
   - title: Compatible
     details: Bitcoin Objects is extending and completely compatible to existing protocols like Bitcom and Operate.
 ---
