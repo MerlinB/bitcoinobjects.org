@@ -27,16 +27,18 @@ The resulting structure can be understood as similar to a spreadsheet: the inter
 ## Rules
 
 1. All on-chain information is divided into objects, where every object is addressable by a unique identifier.
-2. All content of an object must consist key-value pairs where a key is a reference to an object and a value is one or more object references or utf-8-readable Strings.
+2. All content of an object must consist key-value pairs where a key is a [BSVURI](bsvuri) reference to an object and a value is one or more object references or utf-8-readable Strings.
 3. Keys of an object must be unique for this object.
 
-## Getting started
+## Abstract
 
 Every object is defined in relation to other objects. Objects are created by providing at least one key-value pair where a key is a reference to an object as well.
 
 `OP_RETURN <key> <value>`
 
-This is analogous and compatible to the already common Bitcom convention of `OP_RETURN <protocol> <variable>`.
+This is analogous and compatible to the already common Bitcom convention:
+
+`OP_RETURN <protocol> <variable>`
 
 Another valid analogy for objects are functions: `OP_RETURN <function> <argument 1> ...`, but we will get into that later.
 
@@ -44,23 +46,16 @@ The resulting object can be expressed in JSON:
 
 ```json
 {
-  "<object>": {
-    "<key>": "<value>"
-  }
+  <key>: <value>
 }
 ```
 
-Our newly created object (`<object>`), as well as all other objects, is uniquely addressable by an URI consisting of its transaction id and output number, expressed as `obj://<txid>/o/<output>`.
+Our newly created object, as well as all other objects, is uniquely addressable by an [BSVURI](bsvuri) consisting of its transaction id and output number.
 
-The resulting object describes a value (`<value>`) at the intersection of 2 dimensions (`<object>`, `<key>`) and can thus be represented in another form.
-
-```json
-{
-  "<key>": {
-    "<object>": "<value>"
-  }
-}
-```
+::: details A note on interpretation
+The resulting object describes a value (`<value>`) at the intersection of 2 dimensions that can both referenced by a BSVURI.
+These dimensions are the key (`<key>`) and the created output itself.
+:::
 
 Creating a object property with multiple values puts them into an array:
 
@@ -68,240 +63,122 @@ Creating a object property with multiple values puts them into an array:
 
 ```json
 {
-  "<object>": {
-    "<key>": ["<value 1>", "<value 2>"]
-  }
+  <key>: [<value 1>, <value 2>]
 }
 ```
 
-Let's build a meaningful structure and create an object representing a description that we can then later use in other objects as property. Because all objects are build uo from combinations of objects we need to start with an recursive object definition in this case.
+To reference multiple objects we separate them using the pipe operator which is already a convention for protocols (see [Bitcom](https://bitcom.planaria.network/)):
 
-`OP_RETURN this "A short object description."`
+`OP_RETURN <key 1> <value 1> | <key 2> <value 2>`
 
 ```json
 {
-  "<description object>": {
-    "<description object>": "A short object description."
-  }
+  <key 1>: <value 1>,
+  <key 2>: <value 2>
 }
 ```
 
-We could also use an object to represent a datatype. To reference multiple objects we separate them using the pipe operator which is already a convention for protocols (see Bitcom):
+## Getting started
 
-`OP_RETURN this <description object> "The expected datatype." | this "String"`
+Let's build a meaningful structure and start by creating an object representing a description type so that we can use it later as a key in other objects. Because all objects are build up from combinations of objects we need to start with an recursive object definition in this case.
+
+`OP_RETURN o: "A short object description."`
 
 ```json
 {
-  "<datatype object>": {
-    "<description object>": "The expected datatype.",
-    "<datatype object>": "String"
-  }
+  <description object (self)>: "A short object description."
 }
 ```
 
-Let's use our new description and datatype objects to create some more objects to use as properties:
+::: details BSVURI self-reference
+Because we are referencing the same transaction and output we can omit the URI path.
+Theoretically we could also omit the prefix `o:` as we can for all key references, but we can not have an empty key.
 
-`OP_RETURN this "Title" | <description object> "A String representation of the object." | <datatype object> "String"`
+See [BSVURI](bsvuri) for details.
+:::
 
-`OP_RETURN <title object> "Age" | <description object> "The age of a person." | <datatype object> "Integer"`
+We could also use an object to represent a datatype.
 
-`OP_RETURN <title object> "Name" | <description object> "The name of a person." | <datatype object> "String"`
+`OP_RETURN <description object> "The expected datatype." | o: "String"`
 
-`OP_RETURN <title object> "Born" | <description object> "The date of birth of a person." | <datatype object> "String"`
+```json
+{
+  <description object>: "The expected datatype.",
+  <datatype object (self)>: "String"
+}
+```
+
+Let's use our new description and datatype objects to create some more objects to use as property keys:
+
+`OP_RETURN o: "Title" | <description object> "A String representation of the object." | <datatype object> "String"`
+
+`OP_RETURN <title object> "Text" | <description object> "A utf-8 encoded text." | <datatype object> "String"`
+
+`OP_RETURN <title object> "Recipient" | <description object> "The address of a message recipient." | <datatype object> "String"`
+
+`OP_RETURN <title object> "Author" | <description object> "The address of a message author." | <datatype object> "String"`
 
 Now we can create a meaningful object representing a person.
 
-`OP_RETURN <name object> "Merlin Buczek" | <age object> 23 | <born object> "12.04.1995"`
+`OP_RETURN <text object> "Hello there!" | <author object> "acc267bc3fb5b9ab3c6d1aa1c500f40ead2155e3" | <recipient object> "de7ac06e79036f8c85710dcdc98da3a908f1c3af"`
 
 ```json
 {
-  "<merlin object>": {
-    "<name object>": "Merlin Buczek",
-    "<age object>": 23,
-    "<born object>": "12.04.1995"
-  }
+  <text object>: "Hello there!",
+  <author object>: "acc267bc3fb5b9ab3c6d1aa1c500f40ead2155e3",
+  <recipient object>: "de7ac06e79036f8c85710dcdc98da3a908f1c3af"
 }
 ```
 
-You may notice that we did not differentiate between describing specific objects and "key" objects. The reason for this is the separation of syntax and semantics. Our goal is to provide a generalized protocol for describing data structures without limiting users in what structures can be created.
+::: tip Tip: Instances
+You may notice that we do not differentiate between describing specific object instances and "key" objects. The reason for this is the separation of syntax and semantics. Our goal is to provide a generalized protocol for describing data structures without limiting users in what structures can be created.
+:::
 
-## Modifying existing objects
+## A convention for object updates
 
-There is no "right" way to represent any information in this data-structure. However, there is an incentive to share structures so we can expect the market to converge towards useful structure.
-Objects are always created, never deleted or changed. In keeping with out goals of generalization, changes to existing objects are an abstraction, represented by newly created objects. Here is one way how an update to an object could be represented:
+The created graph-like structure is static and there is no "built-in" way of updating objects.
+However, we would to suggest a convention that utilizes Bitcoin's transaction and permissioning system.
+It is important to note that updates to data points are a purely subjective abstraction and users are free to follow or ignore this convention. The responsibility of ensuring data integrity always lies with the application itself.
 
-To modify our existing person object we first need a new object representing an update and an object to reference our editing target:
+To enable an object to be updated it should be included in a spendable output using `OP_PUSHDATA`. To update the object, the output must be spend and an output with the new object must be included at the same position in the transaction. In other words, if the previous object output gets included as the third input, then the third output must be the updated object.
 
-`OP_RETURN <description object> "An update to an object." | <datatype object> "object"`
+This ensures that the object creator can determine permissions, that object changes are universally verifiable and that only one update to a state can exist. It also enables complex script to determine object permissions.
 
-`OP_RETURN <description object> "A target object." | <datatype object> "object"`
+## Aliases
 
-Both the update object as well as the target object in our case expect another object as input.
-Let's also create an object representing a signature so we can sign our update:
+There is a need of developers to not waste space and include all the key object references in every new output they create. To solve this they can assign aliases to use as property keys instead of BSVURI references.
 
-`OP_RETURN <description object> "A signature of the object creator."`
-
-Now we can update our person object by creating 2 outputs:
-
-`OP_RETURN <age object> 25`
+To assign aliases to an object you can include the `alias` to reference an output where aliases are looked for.
 
 ```json
 {
-  "<age object>": 25
+  "alias": "o:/[txid]/[output_number]"
 }
 ```
 
-`OP_RETURN <update object> <changes object> | <target object> <merlin object> | <description object> "I had my birthday." | <signature object> <signature>`
+Inside of this output you can define aliases to use. To be valid an alias must hava a valid BSVURI as value.
 
 ```json
 {
-  "<update merlin object>": {
-    "<update object>": "<changes object>",
-    "<target object>": "<merlin object>",
-    "<description object>": "I had my birthday.",
-    "<signature object>": <signature>
-  }
+  "text": "o:...",
+  "recipient": "o:...",
+  "author": "o:..."
 }
 ```
 
-## Permissions
+Now we can create another message without all the output references:
 
-There are no restrictions on a protocol level of who can create or update objects. We can expect applications to have different requirements and models of how permissions should work.
-Every developer is thus free to construct his own permission system using objects. The responsibility of ensuring data integrity always lies with the application itself.
+`OP_RETURN alias "o:..." | author acc267bc3fb5b9ab3c6d1aa1c500f40ead2155e3 | recipient de7ac06e79036f8c85710dcdc98da3a908f1c3af | text "Here's another message!"`
 
-## Protocol schemas
-
-Of course there is a need of developers to not include all the key object references in every new transaction they make. We can solve this the same way as everything else: We create an abstraction using the data-structure. In our case we will need an object representing a certain object template. Another way to look at it is that we are doing something very similar to creating a new Bitcom protocol.
-
-We will need an object to represent a mapping function and one that represents an array of object references as keys.
-
-`OP_RETURN <description object> "An array of object keys"`
-`OP_RETURN <keys array object> <edit object> <target object> <description object> <signature object>`
-
-Now we can create our array mapping schema.
-
-`OP_RETURN <map object> <update array object> | <description object> "Describes the schema for an object that represents a new edit to an object."`
-
-```json
-{
-  "<create update object>": {
-    "<keys array object>": [
-      "<edit object>",
-      "<target object>",
-      "<description object>",
-      "<signature object>"
-    ],
-    "<description object>": "Describes the schema for an object that represents a new edit to an object."
-  }
-}
-```
-
-Now we can create a new change much shorter:
-
-`OP_RETURN <age object> 26 | <another object> "new value"`
-`OP_RETURN <create update object> <changes object> <merlin object> "I had my birthday AGAIN." <signature>`
-
-```json
-{
-  "<update merlin object 2>": {
-    "<create update object>": [
-      {
-        "<age object>": 26,
-        "<another object>": "new value"
-      },
-      "<merlin object>"
-      "I had my birthday AGAIN.",
-      <signature>
-    ]
-  }
-}
-```
+::: tip Tip: Default aliases
+There is an alias reference that is used by default (that is why the alias keyword is allowed). These aliases can be overridden. They include common Bitcom addresses and can be found [here]() `TODO`.
+:::
 
 ## Bitcom compatibility
 
-Every Bitcom protocol is already valid in our generalized protocol. The only part missing for it to be considered a valid object is that the Bitcom protocol identifier does not point to an object yet.
-Existing protocols can incrementally adopt Bitcoin Objects by adding object references as keys without the need to add every reference at once.
+All outputs using Bitcom protocols are already valid objects but because a Bitcom address is not a valid BSVURI they are missing any context to their data. To fix this we can use aliases. In fact, most Bitcom protocols are already aliased to valid outputs references by default.
 
-Here is an example of unwriter's [BitPic](https://bitpic.network/about) protocol:
-
-```
-OP_0
-OP_RETURN
-19HxigV4QyBv3tHpQVcUEQyq1pzZVdoAut
-  [FILE Binary]
-  image/jpeg
-  binary
-|
-18pAqbYqhzErT6Zk3a5dwxHtB9icv8jH2p
-  [Paymail]
-  [Pubkey]
-  [Sig]
-```
-
-What it does is upload an image via the [B:// protocol](https://b.bitdb.network/) in its first part and connects it to a Paymail in its second part. We can easily represent this as an object:
-
-```json
-{
-  "<BitPic upload object>": {
-    "19HxigV4QyBv3tHpQVcUEQyq1pzZVdoAut": [
-      "<FILE Binary>",
-      "image/jpeg",
-      "binary"
-    ],
-    "18pAqbYqhzErT6Zk3a5dwxHtB9icv8jH2p": [
-      "<Paymail>",
-      "<Pubkey>",
-      "<Sig>"
-}
-```
-
-All we have to do now is create an object definition for the two protocols.
-Because both protocols accept multiple values, it would be very helpful go one step further and create their schema objects (like we did before).
-To avoid needing to modify the protocol (Removing the Bitcom address) we can define aliases between protocol identifiers and object references so the Bitcom address won't even have to be changed:
-
-`OP_RETURN <description object> "An alias between a Bitcom protocol identifier and an object."`
-
-::: warning
-There is no guarantee that Bitcom addresses will be respected by others users of the data structure in the future. Using object references directly is preferable.
-:::
-
-```json
-{
-  "<BitPic upload object>": {
-    "<B:// object>": {
-      "data": "<FILE Binary>",
-      "media type": "image/jpeg",
-      "encoding": "binary"
-    },
-    "<BitPic object>": {
-      "paymail": "<Paymail>",
-      "pubkey": "<Pubkey>",
-      "signature": "<Sig>"
-    }
-  }
-}
-```
-
-Ideally, we would also define the properties as objects.
-
-```json
-{
-  "<BitPic upload object>": {
-    "<B:// object>": {
-      "<Data object>": "<FILE Binary>",
-      "<Media Type object>": "image/jpeg",
-      "<Encoding object>": "binary"
-    },
-    "<BitPic object>": {
-      "<Paymail object>": "<Paymail>",
-      "<Pubkey object>": "<Pubkey>",
-      "<Signature Protocol>": "<Sig>"
-    }
-  }
-}
-```
-
-We have now fully integrated BitPic into our data structure.
+Existing protocols can incrementally adopt Bitcoin Objects by adding aliases or switching to output references directly for one or more properties without the need to change the entire protocol at once.
 
 ## Objects as functions
 
@@ -309,52 +186,20 @@ As you might have already noticed, objects work quite similar to function calls,
 
 ```json
 {
-  "<my program object>": {
-    "<some object>": "some value",
-    "<function 1>": [
-      "<arg 1.1>"
-      "<arg 1.2>"
-    ],
-    "<function 2>": [
-      "<arg 2.1>",
-      "<arg 2.2>"
-    ]
-  }
+  <some object>: "some value",
+  <function 1>: [
+    <arg 1.1>,
+    <arg 1.2>
+  ],
+  <function 2>: [
+    <arg 2.1>,
+    <arg 2.2>
+  ]
 }
 ```
 
-Generalizing functions into our data structure allows them to be put into context and referenced to be included into larger structures. For example, this enables the assembly of larger programs out of individually addressable parts that can compete with alternative implementations.
+Generalizing functions into our data structure allows them to be put into context and referenced to be included into larger structures. This enables the assembly of larger programs out of individually addressable parts that can compete with alternative implementations.
 There could theoretically even exist more than one implementation for every function object, for example in 2 different programming languages.
-
-### Operate compatibility
-
-Let's add an Operate implementation to our `<create update object>`.
-
-```json
-{
-  "<create update object>": {
-    "<keys array object>": [
-      "<edit object>",
-      "<target object>",
-      "<description object>",
-      "<signature object>"
-    ],
-    "<description object>": "Describes the schema for an object that represents a new edit to an object.",
-    "<operate object>": "<operate script hash>"
-  }
-}
-```
-
-The state that our Operate OP receives contains the outputs of `<keys array object>` and `<description object>` as they come before in our `OP_RETURN`, separated by `|`. In our case, they are just adding their values to the state. Our Lua implementation should probably resemble a mapping function that outputs the assembled update object:
-
-```json
-{
-  "<update object>": "<changes object>",
-  "<target object>": "<merlin object>",
-  "<description object>": "I had my birthday.",
-  "<signature object>": <signature>
-}
-```
 
 ## Planaria compatibility
 
@@ -362,7 +207,7 @@ Here is a [JQ](https://stedolan.github.io/jq/) filter that convertes an array of
 
 ```jq
 [ .[] | . as $tx | .out[] | {
-  ( "uop://" + $tx.tx.h + "." + ( .i | tostring ) ): [
+  ( "o:/" + $tx.tx.h + "/" + ( .i | tostring ) ): [
     .tape | select(length > 1 and .[0].object[-1].ops == "OP_RETURN") | .[1:] | .[] | {
       (.object[0].s): (
         .object[1:] | [ .[] | .ls // .s // .ops ]
@@ -373,4 +218,4 @@ Here is a [JQ](https://stedolan.github.io/jq/) filter that convertes an array of
 } ] | map(select(.[] | length > 0))
 ```
 
-Planarium fails to display all objects but [queries are working](https://bob.planaria.network/query/1GgmC7Cg782YtQ6R9QkM58voyWeQJmJJzG/ewogICJ2IjogMywKICAicSI6IHsKICAgICJmaW5kIjogewogICAgICAib3V0LjIiOiB7ICIkZXhpc3RzIjogdHJ1ZSB9LAogICAgICAib3V0LnRhcGUuY2VsbC5vcHMiOiAiT1BfUkVUVVJOIgogICAgfSwKICAgICJwcm9qZWN0IjogewogICAgICAib3V0LnRhcGUuY2VsbC5zIjogMSwgIm91dC50YXBlLmNlbGwub3BzIjogMSwgInR4LmgiOiAxLCAib3V0LmkiOiAxCiAgICB9LAogICAgImxpbWl0IjogMzAKICB9LAogICJyIjp7CiAgICAiZiI6ICJbIC5bXSB8IC4gYXMgJHR4IHwgLm91dFtdIHwgeyAoIFwidW9wOi8vXCIgKyAkdHgudHguaCArIFwiLlwiICsgKCAuaSB8IHRvc3RyaW5nICkgKTogWyAudGFwZSB8ICBzZWxlY3QobGVuZ3RoID4gMSBhbmQgLlswXS5jZWxsWy0xXS5vcHMgPT0gXCJPUF9SRVRVUk5cIikgfCAuWzE6XSB8IC5bXSB8IHsgKC5jZWxsWzBdLnMpOiAoLmNlbGxbMTpdIHwgWyAuW10gfCAubHMgLy8gLnMgLy8gLm9wcyBdIHwgaWYgbGVuZ3RoID4gMSB0aGVuIC4gZWxzZSAuW10gZW5kIHwgLiApIH0gfCBzZWxlY3QoLltdIHwgbGVuZ3RoID4gMCkgfCB0b19lbnRyaWVzIHwgLltdIF0gfCBmcm9tX2VudHJpZXMgfSBdIHwgbWFwKHNlbGVjdCguW10gfCBsZW5ndGggPiAwKSkiCiAgfQp9).
+Planarium fails to display all objects but [queries are working](https://bob.planaria.network/query/1GgmC7Cg782YtQ6R9QkM58voyWeQJmJJzG/ewogICJ2IjogMywKICAicSI6IHsKICAgICJmaW5kIjogewogICAgICAib3V0LjIiOiB7ICIkZXhpc3RzIjogdHJ1ZSB9LAogICAgICAib3V0LnRhcGUuY2VsbC5vcHMiOiAiT1BfUkVUVVJOIgogICAgfSwKICAgICJwcm9qZWN0IjogewogICAgICAib3V0LnRhcGUuY2VsbC5zIjogMSwgIm91dC50YXBlLmNlbGwub3BzIjogMSwgInR4LmgiOiAxLCAib3V0LmkiOiAxCiAgICB9LAogICAgImxpbWl0IjogMzAKICB9LAogICJyIjp7CiAgICAiZiI6ICJbIC5bXSB8IC4gYXMgJHR4IHwgLm91dFtdIHwgeyAoIFwibzovXCIgKyAkdHgudHguaCArIFwiL1wiICsgKCAuaSB8IHRvc3RyaW5nICkgKTogWyAudGFwZSB8ICBzZWxlY3QobGVuZ3RoID4gMSBhbmQgLlswXS5jZWxsWy0xXS5vcHMgPT0gXCJPUF9SRVRVUk5cIikgfCAuWzE6XSB8IC5bXSB8IHsgKC5jZWxsWzBdLnMpOiAoLmNlbGxbMTpdIHwgWyAuW10gfCAubHMgLy8gLnMgLy8gLm9wcyBdIHwgaWYgbGVuZ3RoID4gMSB0aGVuIC4gZWxzZSAuW10gZW5kIHwgLiApIH0gfCBzZWxlY3QoLltdIHwgbGVuZ3RoID4gMCkgfCB0b19lbnRyaWVzIHwgLltdIF0gfCBmcm9tX2VudHJpZXMgfSBdIHwgbWFwKHNlbGVjdCguW10gfCBsZW5ndGggPiAwKSkiCiAgfQp9).

@@ -30,6 +30,5 @@ module.exports = {
     ]
   ],
   description: "Self-descriptive JSON graphs on Bitcoin SV",
-  title: "Bitcoin Objects",
-  base: "/bitcoinobjects.org/"
+  title: "Bitcoin Objects"
 };

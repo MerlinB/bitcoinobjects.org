@@ -11,6 +11,7 @@ cd src/.vuepress/dist
 
 # if you are deploying to a custom domain
 echo 'bitcoinobjects.org' > CNAME
+touch .nojekyll
 
 git init
 git add -A
