@@ -176,12 +176,11 @@ There is an alias reference that is used by default (that is why the alias keywo
 
 ## Bitcom compatibility
 
-All outputs using Bitcom protocols are already valid objects but because a Bitcom address is not a valid BSVURI they are missing any context to their data. To fix this we can use aliases. In fact, most Bitcom protocols are already aliased to valid outputs references by default.
+All outputs using Bitcom protocols are already valid objects but because a Bitcom address is not a valid BSVURI they are missing any context to their keys. To fix this we can use aliases. In fact, most Bitcom protocols are already aliased to valid outputs references by default.
 
 Existing protocols can incrementally adopt Bitcoin Objects by adding aliases or switching to output references directly for one or more properties without the need to change the entire protocol at once.
 
-## Objects as functions
-
+::: details Objects as functions
 As you might have already noticed, objects work quite similar to function calls, separated by the pipe operator `|`. In fact, this is what [Operate](https://www.operatebsv.org/) is already doing. In Operate, every function is implemented with on-chain Lua code and the result of any function is piped as input into the next function. We can argue about objects as functions in the same way, which makes them compatible with Operates OPs.
 
 ```json
@@ -199,7 +198,7 @@ As you might have already noticed, objects work quite similar to function calls,
 ```
 
 Generalizing functions into our data structure allows them to be put into context and referenced to be included into larger structures. This enables the assembly of larger programs out of individually addressable parts that can compete with alternative implementations.
-There could theoretically even exist more than one implementation for every function object, for example in 2 different programming languages.
+:::
 
 ## Planaria compatibility
 
