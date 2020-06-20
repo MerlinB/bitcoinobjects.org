@@ -16,7 +16,7 @@ Bitcoin Objects is a framework for building self-descriptive and interoperable d
 
 It can be incrementally adopted to benefit from a higher degree of interoperability and does not require a change to existing infrastructure, including currently used protocols.
 
-The benefits of using the same, generalized data-structure could be compared to speaking the same language. While knowledge of the same concepts does not necessarily follow from it, a shared language can be used explain and create common concepts by putting them in context. Context makes information more useful and thus more valuable.
+The benefits of using the same, generalized data-structure could be compared to speaking the same language. While knowledge of the same concepts does not necessarily follow from it, a shared language can be used to explain and create common concepts by putting them in context. Context makes information more useful and thus more valuable.
 
 The framework is designed to be a non-restrictive generalization of existing conventions and protocols and is thus completely compatible to many existing solutions, including Bitcom and Operate.
 
@@ -27,7 +27,7 @@ The resulting structure can be understood as similar to a spreadsheet: the inter
 ## Rules
 
 1. All on-chain information is divided into objects, where every object is addressable by a unique identifier.
-2. All content of an object must consist key-value pairs where a key is a [BSVURI](bsvuri) reference to an object and a value is one or more object references or utf-8-readable Strings.
+2. All content of an object must consist of key-value pairs where a key is a [BSVURI](bsvuri) reference to an object and a value is one or more object references or utf-8-readable Strings.
 3. Keys of an object must be unique for this object.
 
 ## Abstract
@@ -140,7 +140,7 @@ The created graph-like structure is static and there is no "built-in" way of upd
 However, we would to suggest a convention that utilizes Bitcoin's transaction and permissioning system.
 It is important to note that updates to data points are a purely subjective abstraction and users are free to follow or ignore this convention. The responsibility of ensuring data integrity always lies with the application itself.
 
-To enable an object to be updated it should be included in a spendable output using `OP_PUSHDATA`. To update the object, the output must be spend and an output with the new object must be included at the same position in the transaction. In other words, if the previous object output gets included as the third input, then the third output must be the updated object.
+To enable an object to be updated it should be included in a spendable output using `OP_PUSHDATA`. To update the object, the output must be spent and an output with the new object must be included at the same position in the transaction. In other words, if the previous object output gets included as the third input, then the third output must be the updated object.
 
 This ensures that the object creator can determine permissions, that object changes are universally verifiable and that only one update to a state can exist. It also enables complex script to determine object permissions.
 
@@ -148,7 +148,7 @@ This ensures that the object creator can determine permissions, that object chan
 
 There is a need of developers to not waste space and include all the key object references in every new output they create. To solve this they can assign aliases to use as property keys instead of BSVURI references.
 
-To assign aliases to an object you can include the `alias` to reference an output where aliases are looked for.
+To assign aliases to an object you can include the `alias` key to reference an output where aliases are looked for.
 
 ```json
 {
